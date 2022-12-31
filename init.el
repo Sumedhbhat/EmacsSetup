@@ -17,6 +17,7 @@
   (interactive)
   (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
 			 '(2 "_NET_WM_STATE_FULLSCREEN" 0)))
+
 ;; Running the function
 (fullscreen)
 
@@ -30,9 +31,10 @@
  ;; If there is more than one, they won't work right.
  '(display-battery-mode t)
  '(global-prettier-mode nil)
+ '(helm-minibuffer-history-key "M-p")
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(lsp-mode react-snippets ac-emmet emmet-mode format-all prettier-js dired-sidebar prettier company-solidity all-the-icons-install-fonts evil-magit which-key visual-fill-column use-package rainbow-delimiters org-bullets ivy-rich hydra helpful general forge evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons))
+   '(popper leetcode vterm-toggle treemacs-magit treemacs-evil treemacs-projectile treemacs-icons-dired treemacs-tab-bar vterm json-mode helm-xref dap-mode flycheck helm-lsp lsp-treemacs web-mode lsp-mode react-snippets ac-emmet emmet-mode format-all prettier-js dired-sidebar prettier company-solidity all-the-icons-install-fonts evil-magit which-key visual-fill-column use-package rainbow-delimiters org-bullets ivy-rich hydra helpful general forge evil-collection doom-themes doom-modeline counsel-projectile command-log-mode all-the-icons))
  '(prettier-enabled-parsers
    '(angular babel babel-flow babel-ts css elm espree flow graphql java json json5 json-stringify less lua html markdown mdx meriyah php postgresql pug python ruby scss sh solidity svelte swift toml typescript vue xml yaml)))
 
@@ -163,7 +165,6 @@
     :global-prefix "C-SPC")
 
   (rune/leader-keys
-    "t"  '(:ignore t :which-key "toggles")
     "tt" '(counsel-load-theme :which-key "choose theme")))
 
 (use-package evil
@@ -231,6 +232,7 @@
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 (use-package forge)
 
+
 (defun efs/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
@@ -285,8 +287,8 @@
   :hook (org-mode . efs/org-mode-visual-fill))
 
 ;; Solidity packages required to run it
-(require 'solidity-mode)
-(require 'company-solidity)
+(use-package solidity-mode)
+(use-package company-solidity)
 
 ;; Adding Local variables to the autocomplete suggestions in solidity
 (add-hook 'solidity-mode-hook
@@ -304,7 +306,6 @@
 
 ;; The Tree Sidebar for emacs
 (use-package dired-sidebar
-  :bind (("C-x C-n" . dired-sidebar-toggle-sidebar))
   :ensure t
   :commands (dired-sidebar-toggle-sidebar)
   :init
@@ -318,11 +319,11 @@
   (setq dired-sidebar-use-term-integration t))
 
 ;; Function to toggle both the dired and iBuffer at the same time
+;;Toggle both the treemacs and ibuffer sidebars
 (defun sidebar-toggle ()
-  "Toggle both `dired-sidebar' and `ibuffer-sidebar'."
   (interactive)
-  (dired-sidebar-toggle-sidebar)
-  (ibuffer-sidebar-toggle-sidebar))
+  (ibuffer-sidebar-toggle-sidebar)
+  (treemacs))
 
 ;;Key binding to Toggle Sidebar
 (rune/leader-keys
@@ -344,21 +345,152 @@
   (add-hook 'format-all-mode-hook 'format-all-ensure-formatter))
 
 ;; Emmet for Emacs
-(require 'emmet-mode)
-(add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
-(add-hook 'css-mode-hook  'emmet-mode) ;; enable Emmet's css abbreviation.
-(add-hook 'emmet-mode-hook (lambda () (setq emmet-indentation 2))) ;; indent 2 spaces.
-(setq emmet-self-closing-tag-style " /") ;; default "/"
+(use-package emmet-mode
+  :ensure t
+  :hook
+  (sgml-mode-hook . emmet-mode)
+  (css-mode-hook . emmet-mode)
+  (emmet-mode-hook . (lambda () (setq emmet-indentation 2))))
+;;(add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
+;;(add-hook 'css-mode-hook  'emmet-mode) ;; enable Emmet's css abbreviation.
+;;(add-hook 'emmet-mode-hook (lambda () (setq emmet-indentation 2))) ;; indent 2 spaces.
+;;(setq emmet-self-closing-tag-style " /") ;; default "/"
 ;; only " /", "/" and "" are valid.
 ;; eg. <meta />, <meta/>, <meta>
 
+
+(use-package web-mode
+  :ensure t
+  :hook (web-mode-hook . emmet-mode)
+  :config
+  (add-to-list 'auto-mode-alist '("\\.html$" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.jsx?$" . web-mode)) ;; auto-enable for .js/.jsx files
+  (add-to-list 'auto-mode-alist '("\\.js?$" . web-mode)) ;; auto-enable for .js/.jsx files
+  (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+  (setq web-mode-content-types-alist '(("jsx" . "\\.js[x]?\\'"))))
+
+
 ;; Auto Complete for emmet mode
-(require 'ac-emmet) ;; Not necessary if using ELPA package
+(use-package ac-emmet) ;; Not necessary if using ELPA package
 (add-hook 'sgml-mode-hook 'ac-emmet-html-setup)
 (add-hook 'css-mode-hook 'ac-emmet-css-setup)
 
 ;; React Snippets
-(require 'react-snippets)
+(use-package react-snippets)
+
+(use-package lsp-mode)
+
+(use-package yasnippet)
+
+(use-package lsp-treemacs)
+
+(use-package helm-lsp
+  :init (helm-mode))
+
+(use-package helm-xref
+  :bind
+  ([remap find-file] . helm-find-files)
+  ([remap execute-extended-command] . helm-M-x)
+  ([remap switch-to-buffer] . helm-mini))
+
+(use-package flycheck)
+
+(setq-default flycheck-disabled-checkers
+              (append flycheck-disabled-checkers
+                      '(javascript-jshint json-jsonlist)))
+
+;; Enable eslint checker for web-mode
+(flycheck-add-mode 'javascript-eslint 'web-mode)
+;; Enable flycheck globally
+(add-hook 'after-init-hook #'global-flycheck-mode)
+
+(use-package avy)
+
+(use-package company)
+
+(use-package dap-mode)
+
+(use-package json-mode)
+
+(helm-mode)
+;; Setting up LSP
+(add-hook 'prog-mode-hook #'lsp)
+
+;; To make the vterminal only half the size while opening it
+(use-package vterm
+  :ensure t)
+
+
+(use-package vterm-toggle
+  :ensure t)
+
+
+(defun vterm-toggle-func ()
+  (interactive)
+  (vterm-toggle))
+
+(rune/leader-keys
+  "ot" '(vterm-toggle-func :which-key "Open Terminal"))
+
+;;(setq gc-cons-threshold (* 100 1024 1024)
+;;    read-process-output-max (* 1024 1024)
+;;  company-idle-delay 0.0
+;;company-minimum-prefix-length 1
+;;create-lockfiles nil) ;; lock files will kill `npm start'
+
+(with-eval-after-load 'lsp-mode
+  (require 'dap-chrome)
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+  (yas-global-mode))
+
+;;treemacs Installing
+(use-package treemacs
+  :ensure t
+  :config (treemacs-project-follow-mode))
+
+(use-package treemacs-evil
+  :after (treemacs evil)
+  :ensure t)
+
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :ensure t)
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
+
+(use-package leetcode
+  :ensure t
+  :custom
+  (setq leetcode-save-solutions t)
+  (setq leetcode-directory "~/Documents/CompetitiveCoding/LeetCode")
+  (setq leetcode-prefer-sql "mysql")
+  )
+
+(quelpa
+ '(quelpa-use-package
+   :fetcher git
+   :url "https://github.com/quelpa/quelpa-use-package.git"))
+(require 'quelpa-use-package)
+
+
+(require 'clang-format)
+(global-set-key (kbd "C-c i") 'clang-format-region)
+(global-set-key (kbd "C-c u") 'clang-format-buffer)
+
+(setq clang-format-style-option "llvm")
+
+(use-package clang-format+
+  :quelpa (clang-format+
+           :fetcher github
+           :repo "SavchenkoValeriy/emacs-clang-format-plus"))
+
+(add-hook 'c-mode-common-hook #'clang-format+-mode)
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
